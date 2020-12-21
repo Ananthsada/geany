@@ -64,6 +64,9 @@ static gboolean switch_in_progress = FALSE;
 static GtkWidget *switch_dialog = NULL;
 static GtkWidget *switch_dialog_label = NULL;
 
+typedef void(*menu_item_callback)(GtkWidget* child);
+
+menu_item_callback menu_update_callback;
 
 static void
 notebook_page_reordered_cb(GtkNotebook *notebook, GtkWidget *child, guint page_num,
@@ -79,6 +82,11 @@ notebook_tab_close_clicked_cb(GtkButton *button, gpointer user_data);
 
 static void setup_tab_dnd(void);
 
+GEANY_API_SYMBOL
+void register_menu_callback(void(*callback)(GtkWidget* child))
+{
+	menu_update_callback = callback;
+}
 
 static void update_mru_docs_head(GeanyDocument *doc)
 {
@@ -509,6 +517,10 @@ static void show_tab_bar_popup_menu(GdkEventButton *event, GeanyDocument *doc)
 	gtk_container_add(GTK_CONTAINER(menu), menu_item);
 	g_signal_connect(menu_item, "activate", G_CALLBACK(on_close_all1_activate), NULL);
 
+	if (menu_update_callback)
+	{
+		menu_update_callback(menu);
+	}
 	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, event->button, event->time);
 }
 

@@ -25,6 +25,7 @@
 #endif
 
 #include "geanyplugin.h"
+#include "../src/notebook.h"
 #include "gtkcompat.h"
 #include <string.h>
 
@@ -81,12 +82,46 @@ static gint document_main_page = -1;
 static gboolean sci_notify_recvd = FALSE;
 static guint sci_notify_timeout = 0;
 
+static void on_refresh(void);
+static void on_split_horizontally(GtkMenuItem *menuitem, gpointer user_data);
+static void set_editor(EditWindow *editwin, GeanyEditor *editor);
 static void on_unsplit(GtkMenuItem *menuitem, gpointer user_data);
+static void split_view(gboolean horizontal);
 
-void splitwindow_timestamp()
+static void on_menu_item_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
-	gint64 _time = g_get_monotonic_time();
-	printf("%lld ", _time);
+	on_split_horizontally(menuitem, NULL);
+	on_refresh();
+}
+
+static void on_switch_splitview_page_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if (plugin_state != STATE_UNSPLIT)
+	{
+		GeanyDocument *doc = document_get_current();
+		if (doc->is_valid)
+		{
+			document_main_page = gtk_notebook_get_current_page(geany_data->main_widgets->notebook);
+			printf("on_switch_splitview_page_clicked %d\n", document_main_page);
+			set_editor(&edit_window, doc->editor);
+		}
+	}
+	else
+	{
+		split_view(TRUE);
+	}
+}
+
+static void menu_plugin_callback(GtkWidget* menu)
+{
+	GtkWidget* menu_item;
+
+	printf("menu_plugin_callback\n");
+	
+	menu_item = ui_image_menu_item_new(GTK_STOCK_CLOSE, _("M_ove to SplitPane"));
+	gtk_widget_show(menu_item);
+	gtk_container_add(GTK_CONTAINER(menu), menu_item);
+	g_signal_connect(menu_item, "activate", G_CALLBACK(on_switch_splitview_page_clicked), NULL);
 }
 
 static gboolean on_sci_notify_timeout(G_GNUC_UNUSED gpointer data)
@@ -263,6 +298,7 @@ static void on_refresh(void)
 {
 	GeanyDocument *doc = document_get_current();
 
+	document_main_page = gtk_notebook_get_current_page(geany_data->main_widgets->notebook);
 	g_return_if_fail(doc);
 	g_return_if_fail(edit_window.sci);
 
@@ -273,7 +309,11 @@ static void on_refresh(void)
 static void on_doc_menu_item_clicked(gpointer item, GeanyDocument *doc)
 {
 	if (doc->is_valid)
+	{
+		printf("on_doc_menu_item_clicked %d\n", doc->index);
+		document_main_page = doc->index;
 		set_editor(&edit_window, doc->editor);
+	}
 }
 
 
@@ -357,6 +397,46 @@ static GtkWidget *create_toolbar(void)
 }
 
 
+static void on_move_to_other_pane_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	printf("Inside on_move_to_other_pane_activate\n");
+}
+
+static void show_splitview_tab_bar_popup_menu(GdkEventButton *event)
+{
+	GtkWidget *menu_item;
+	static GtkWidget *menu = NULL;
+
+	if (menu == NULL)
+		menu = gtk_menu_new();
+
+	/* clear the old menu items */
+	gtk_container_foreach(GTK_CONTAINER(menu), (GtkCallback)gtk_widget_destroy, NULL);
+
+	menu_item = ui_image_menu_item_new(GTK_STOCK_CLOSE, _("Move File to _Other view"));
+	gtk_widget_show(menu_item);
+	gtk_container_add(GTK_CONTAINER(menu), menu_item);
+	g_signal_connect(menu_item, "activate", G_CALLBACK(on_unsplit), NULL);
+
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, event->button, event->time);
+}
+
+static gboolean splitview_notebook_tab_click(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	guint state;
+
+	printf("splitview_notebook_tab_click %d\n", event->button);
+	/* right-click is first handled here if it happened on a notebook tab */
+	if (event->button == 3)
+	{
+		show_splitview_tab_bar_popup_menu(event);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+
 static void split_view(gboolean horizontal)
 {
 	GtkWidget *notebook = geany_data->main_widgets->notebook;
@@ -392,6 +472,9 @@ static void split_view(gboolean horizontal)
 	gtk_notebook_set_show_tabs(GTK_NOTEBOOK(splitwin_notebook), FALSE);
 	gtk_notebook_append_page(GTK_NOTEBOOK(splitwin_notebook), box, NULL);
 	gtk_container_add(GTK_CONTAINER(pane), splitwin_notebook);
+
+	g_signal_connect(G_OBJECT(splitwin_notebook), "button-press-event",
+		G_CALLBACK(splitview_notebook_tab_click), NULL);
 
 	set_editor(&edit_window, doc->editor);
 
@@ -500,6 +583,8 @@ void plugin_init(GeanyData *data)
 		0, 0, "split_vertical", _("Top and Bottom"), menu_items.vertical);
 	keybindings_set_item(key_group, KB_SPLIT_UNSPLIT, kb_activate,
 		0, 0, "split_unsplit", _("_Unsplit"), menu_items.unsplit);
+	
+	register_menu_callback(menu_plugin_callback);
 }
 
 

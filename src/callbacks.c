@@ -211,7 +211,7 @@ static void on_edit1_deselect(GtkMenuShell *menushell, gpointer user_data)
 
 void on_undo1_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 
 	g_return_if_fail(doc != NULL);
 
@@ -225,7 +225,7 @@ void on_undo1_activate(GtkMenuItem *menuitem, gpointer user_data)
 
 void on_redo1_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 
 	g_return_if_fail(doc != NULL);
 
