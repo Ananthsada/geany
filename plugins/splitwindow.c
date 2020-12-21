@@ -77,10 +77,31 @@ typedef struct EditWindow
 EditWindow;
 
 static EditWindow edit_window = {NULL, NULL, NULL, NULL};
-
+static gint document_main_page = -1;
+static gboolean sci_notify_recvd = FALSE;
+static guint sci_notify_timeout = 0;
 
 static void on_unsplit(GtkMenuItem *menuitem, gpointer user_data);
 
+void splitwindow_timestamp()
+{
+	gint64 _time = g_get_monotonic_time();
+	printf("%lld ", _time);
+}
+
+static gboolean on_sci_notify_timeout(G_GNUC_UNUSED gpointer data)
+{
+	if (sci_notify_recvd == TRUE)
+	{
+		sci_notify_recvd = FALSE;
+		return TRUE;
+	}
+	else
+	{
+		set_splitmode_state(FALSE, -1);
+		return FALSE;
+	}
+}
 
 /* line numbers visibility */
 static void set_line_numbers(ScintillaObject * sci, gboolean set)
@@ -108,6 +129,16 @@ static void on_sci_notify(ScintillaObject *sci, gint param,
 {
 	gint line;
 
+	set_splitmode_state(TRUE, document_main_page);
+
+	sci_notify_recvd = TRUE;
+	if(sci_notify_timeout != 0)
+	{
+		g_source_remove(sci_notify_timeout);
+	}
+	sci_notify_timeout = g_timeout_add(600, on_sci_notify_timeout, NULL);
+
+	printf("on_sci_notify\n");
 	switch (nt->nmhdr.code)
 	{
 		/* adapted from editor.c: on_margin_click() */
@@ -337,6 +368,8 @@ static void split_view(gboolean horizontal)
 
 	g_return_if_fail(doc);
 	g_return_if_fail(edit_window.editor == NULL);
+
+	document_main_page = gtk_notebook_get_current_page(notebook);
 
 	set_state(horizontal ? STATE_SPLIT_HORIZONTAL : STATE_SPLIT_VERTICAL);
 

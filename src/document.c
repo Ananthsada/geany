@@ -120,6 +120,15 @@ static GtkWidget* document_show_message(GeanyDocument *doc, GtkMessageType msgty
 	const gchar *btn_3, GtkResponseType response_3,
 	const gchar *extra_text, const gchar *format, ...) G_GNUC_PRINTF(11, 12);
 
+static gboolean splitmode_state = 0;
+static gint splitmode_page_index = -1;
+
+GEANY_API_SYMBOL
+void set_splitmode_state(gboolean state, gint page_index)
+{
+	splitmode_page_index = page_index;
+	splitmode_state = state;
+}
 
 /**
  * Finds a document whose @c real_path field matches the given filename.
@@ -362,6 +371,29 @@ GeanyDocument *document_get_from_page(guint page_num)
 	return document_get_from_notebook_child(parent);
 }
 
+/**
+ *  Finds the current document.
+ *
+ *  @return @transfer{none} @nullable A pointer to the current document or @c NULL if there are no opened documents.
+ **/
+GEANY_API_SYMBOL
+GeanyDocument* document_get_current_active(void)
+{
+	gint cur_page;
+	if (splitmode_state)
+	{
+		cur_page = splitmode_page_index;
+	}
+	else
+	{
+		cur_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(main_widgets.notebook));
+	}
+
+	if (cur_page == -1)
+		return NULL;
+	else
+		return document_get_from_page((guint)cur_page);
+}
 
 /**
  *  Finds the current document.

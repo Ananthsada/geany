@@ -108,7 +108,7 @@ static void on_clone1_activate(GtkMenuItem *menuitem, gpointer user_data)
 
 void on_save1_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 
 	if (doc != NULL)
 	{

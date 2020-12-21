@@ -170,8 +170,11 @@ GeanyDocument;
 #define DOC_FILENAME(doc) \
 	(G_LIKELY((doc)->file_name != NULL) ? ((doc)->file_name) : GEANY_STRING_UNTITLED)
 
+void set_splitmode_state(gboolean state, gint page_index);
 
 GeanyDocument* document_new_file(const gchar *filename, GeanyFiletype *ft, const gchar *text);
+
+GeanyDocument* document_get_current_active(void);
 
 GeanyDocument *document_get_current(void);
 
