@@ -64,7 +64,7 @@ static gboolean switch_in_progress = FALSE;
 static GtkWidget *switch_dialog = NULL;
 static GtkWidget *switch_dialog_label = NULL;
 
-typedef void(*menu_item_callback)(GtkWidget* child);
+typedef void(*menu_item_callback)(GtkWidget* child, GeanyDocument* doc);
 
 menu_item_callback menu_update_callback;
 
@@ -83,7 +83,7 @@ notebook_tab_close_clicked_cb(GtkButton *button, gpointer user_data);
 static void setup_tab_dnd(void);
 
 GEANY_API_SYMBOL
-void register_menu_callback(void(*callback)(GtkWidget* child))
+void register_menu_callback(void(*callback)(GtkWidget* child, GeanyDocument* doc))
 {
 	menu_update_callback = callback;
 }
@@ -519,7 +519,7 @@ static void show_tab_bar_popup_menu(GdkEventButton *event, GeanyDocument *doc)
 
 	if (menu_update_callback)
 	{
-		menu_update_callback(menu);
+		menu_update_callback(menu, doc);
 	}
 	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, event->button, event->time);
 }

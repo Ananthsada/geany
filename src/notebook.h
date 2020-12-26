@@ -45,7 +45,7 @@ void notebook_switch_tablastused(void);
  * document yet). */
 gboolean notebook_switch_in_progress(void);
 
-void register_menu_callback(void(*callback)(GtkWidget* child));
+void register_menu_callback(void(*callback)(GtkWidget* child, GeanyDocument* doc));
 
 G_END_DECLS
 

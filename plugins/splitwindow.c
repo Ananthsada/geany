@@ -86,7 +86,7 @@ static void on_refresh(void);
 static void on_split_horizontally(GtkMenuItem *menuitem, gpointer user_data);
 static void set_editor(EditWindow *editwin, GeanyEditor *editor);
 static void on_unsplit(GtkMenuItem *menuitem, gpointer user_data);
-static void split_view(gboolean horizontal);
+static void split_view(gboolean horizontal, GeanyDocument* doc);
 
 static void on_menu_item_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
@@ -96,32 +96,33 @@ static void on_menu_item_clicked(GtkMenuItem *menuitem, gpointer user_data)
 
 static void on_switch_splitview_page_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
+	GeanyDocument* doc = (GeanyDocument*)user_data;
+
 	if (plugin_state != STATE_UNSPLIT)
 	{
-		GeanyDocument *doc = document_get_current();
 		if (doc->is_valid)
 		{
-			document_main_page = gtk_notebook_get_current_page(geany_data->main_widgets->notebook);
-			printf("on_switch_splitview_page_clicked %d\n", document_main_page);
+			document_main_page = doc->index;
 			set_editor(&edit_window, doc->editor);
 		}
 	}
 	else
 	{
-		split_view(TRUE);
+		split_view(TRUE, doc);
 	}
 }
 
-static void menu_plugin_callback(GtkWidget* menu)
+static void menu_plugin_callback(GtkWidget* menu, GeanyDocument* doc)
 {
 	GtkWidget* menu_item;
 
-	printf("menu_plugin_callback\n");
-	
-	menu_item = ui_image_menu_item_new(GTK_STOCK_CLOSE, _("M_ove to SplitPane"));
-	gtk_widget_show(menu_item);
-	gtk_container_add(GTK_CONTAINER(menu), menu_item);
-	g_signal_connect(menu_item, "activate", G_CALLBACK(on_switch_splitview_page_clicked), NULL);
+	if (doc)
+	{
+		menu_item = ui_image_menu_item_new(GTK_STOCK_CLOSE, _("M_ove to SplitPane"));
+		gtk_widget_show(menu_item);
+		gtk_container_add(GTK_CONTAINER(menu), menu_item);
+		g_signal_connect(menu_item, "activate", G_CALLBACK(on_switch_splitview_page_clicked), doc);
+	}
 }
 
 static gboolean on_sci_notify_timeout(G_GNUC_UNUSED gpointer data)
@@ -162,7 +163,7 @@ static void set_line_numbers(ScintillaObject * sci, gboolean set)
 static void on_sci_notify(ScintillaObject *sci, gint param,
 		SCNotification *nt, gpointer data)
 {
-	gint line;
+	gint position,line;
 
 	set_splitmode_state(TRUE, document_main_page);
 
@@ -173,7 +174,7 @@ static void on_sci_notify(ScintillaObject *sci, gint param,
 	}
 	sci_notify_timeout = g_timeout_add(600, on_sci_notify_timeout, NULL);
 
-	printf("on_sci_notify\n");
+	position = sci_get_current_position(sci);
 	switch (nt->nmhdr.code)
 	{
 		/* adapted from editor.c: on_margin_click() */
@@ -198,7 +199,11 @@ static void on_sci_notify(ScintillaObject *sci, gint param,
 				scintilla_send_message(sci, SCI_TOGGLEFOLD, line, 0);
 			}
 			break;
-
+		case SCN_PAINTED:
+			position = sci_get_current_position(sci);
+			line = sci_get_line_from_position(sci, position);
+			sci_set_current_position(edit_window.editor->sci, position, TRUE);
+			break;
 		default: break;
 	}
 }
@@ -310,7 +315,6 @@ static void on_doc_menu_item_clicked(gpointer item, GeanyDocument *doc)
 {
 	if (doc->is_valid)
 	{
-		printf("on_doc_menu_item_clicked %d\n", doc->index);
 		document_main_page = doc->index;
 		set_editor(&edit_window, doc->editor);
 	}
@@ -396,12 +400,6 @@ static GtkWidget *create_toolbar(void)
 	return toolbar;
 }
 
-
-static void on_move_to_other_pane_activate(GtkMenuItem *menuitem, gpointer user_data)
-{
-	printf("Inside on_move_to_other_pane_activate\n");
-}
-
 static void show_splitview_tab_bar_popup_menu(GdkEventButton *event)
 {
 	GtkWidget *menu_item;
@@ -425,7 +423,6 @@ static gboolean splitview_notebook_tab_click(GtkWidget *widget, GdkEventButton *
 {
 	guint state;
 
-	printf("splitview_notebook_tab_click %d\n", event->button);
 	/* right-click is first handled here if it happened on a notebook tab */
 	if (event->button == 3)
 	{
@@ -437,19 +434,29 @@ static gboolean splitview_notebook_tab_click(GtkWidget *widget, GdkEventButton *
 }
 
 
-static void split_view(gboolean horizontal)
+static void split_view(gboolean horizontal, GeanyDocument* doc_arg)
 {
 	GtkWidget *notebook = geany_data->main_widgets->notebook;
 	GtkWidget *parent = gtk_widget_get_parent(notebook);
 	GtkWidget *pane, *toolbar, *box, *splitwin_notebook;
-	GeanyDocument *doc = document_get_current();
 	gint width = gtk_widget_get_allocated_width(notebook) / 2;
 	gint height = gtk_widget_get_allocated_height(notebook) / 2;
+	GeanyDocument *doc;
+
+	if (!doc_arg)
+	{
+		doc = document_get_current();
+	}
+	else
+	{
+		doc = doc_arg;
+	}
 
 	g_return_if_fail(doc);
 	g_return_if_fail(edit_window.editor == NULL);
 
-	document_main_page = gtk_notebook_get_current_page(notebook);
+	document_main_page = doc->index;;
+	//document_main_page = gtk_notebook_get_current_page(notebook);
 
 	set_state(horizontal ? STATE_SPLIT_HORIZONTAL : STATE_SPLIT_VERTICAL);
 
@@ -492,13 +499,13 @@ static void split_view(gboolean horizontal)
 
 static void on_split_horizontally(GtkMenuItem *menuitem, gpointer user_data)
 {
-	split_view(TRUE);
+	split_view(TRUE, NULL);
 }
 
 
 static void on_split_vertically(GtkMenuItem *menuitem, gpointer user_data)
 {
-	split_view(FALSE);
+	split_view(FALSE, NULL);
 }
 
 
@@ -530,11 +537,11 @@ static void kb_activate(guint key_id)
 	{
 		case KB_SPLIT_HORIZONTAL:
 			if (plugin_state == STATE_UNSPLIT)
-				split_view(TRUE);
+				split_view(TRUE, NULL);
 			break;
 		case KB_SPLIT_VERTICAL:
 			if (plugin_state == STATE_UNSPLIT)
-				split_view(FALSE);
+				split_view(FALSE, NULL);
 			break;
 		case KB_SPLIT_UNSPLIT:
 			if (plugin_state != STATE_UNSPLIT)

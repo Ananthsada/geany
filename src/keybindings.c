@@ -1360,7 +1360,7 @@ static gboolean on_key_press_event(GtkWidget *widget, GdkEventKey *ev, gpointer 
 	if (key_press_ret)
 		return TRUE;
 
-	doc = document_get_current();
+	doc = document_get_current_active();
 	if (doc)
 		document_check_disk_status(doc, FALSE);
 
@@ -1536,7 +1536,7 @@ static void cb_func_menu_help(G_GNUC_UNUSED guint key_id)
 
 static gboolean cb_func_search_action(guint key_id)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	ScintillaObject *sci;
 
 	/* these work without docs */
@@ -1753,7 +1753,7 @@ static gboolean cb_func_switch_action(guint key_id)
 	{
 		case GEANY_KEYS_FOCUS_EDITOR:
 		{
-			GeanyDocument *doc = document_get_current();
+			GeanyDocument *doc = document_get_current_active();
 			if (doc != NULL)
 			{
 				GtkWidget *sci = GTK_WIDGET(doc->editor->sci);
@@ -1976,7 +1976,7 @@ static void goto_tag(GeanyDocument *doc, gboolean definition)
 static gboolean cb_func_goto_action(guint key_id)
 {
 	gint cur_line;
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 
 	if (doc == NULL)
 		return TRUE;
@@ -2098,11 +2098,11 @@ static void delete_lines(GeanyEditor *editor)
 /* common function for editor keybindings, only valid when scintilla has focus. */
 static gboolean cb_func_editor_action(guint key_id)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	GtkWidget *focusw = gtk_window_get_focus(GTK_WINDOW(main_widgets.window));
 
 	/* edit keybindings only valid when scintilla widget has focus */
-	if (doc == NULL || focusw != GTK_WIDGET(doc->editor->sci))
+	if (doc == NULL /*|| focusw != GTK_WIDGET(doc->editor->sci)*/)
 		return FALSE; /* also makes tab work outside editor */
 
 	switch (key_id)
@@ -2403,11 +2403,11 @@ static void join_paragraph(GeanyEditor *editor)
 /* common function for format keybindings, only valid when scintilla has focus. */
 static gboolean cb_func_format_action(guint key_id)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	GtkWidget *focusw = gtk_window_get_focus(GTK_WINDOW(main_widgets.window));
 
 	/* keybindings only valid when scintilla widget has focus */
-	if (doc == NULL || focusw != GTK_WIDGET(doc->editor->sci))
+	if (doc == NULL /*|| focusw != GTK_WIDGET(doc->editor->sci)*/)
 		return TRUE;
 
 	switch (key_id)
@@ -2492,7 +2492,7 @@ static gboolean cb_func_format_action(guint key_id)
 /* common function for select keybindings, valid for scintilla and/or gtk_editable objects. */
 static gboolean cb_func_select_action(guint key_id)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	GtkWidget *focusw = gtk_window_get_focus(GTK_WINDOW(main_widgets.window));
 
 	switch (key_id)
@@ -2527,7 +2527,7 @@ static gboolean cb_func_select_action(guint key_id)
 
 static gboolean cb_func_document_action(guint key_id)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 
 	if (doc == NULL)
 		return TRUE;
@@ -2609,11 +2609,11 @@ static void insert_line_before(GeanyEditor *editor)
 /* common function for insert keybindings, only valid when scintilla has focus. */
 static gboolean cb_func_insert_action(guint key_id)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	GtkWidget *focusw = gtk_window_get_focus(GTK_WINDOW(main_widgets.window));
 
 	/* keybindings only valid when scintilla widget has focus */
-	if (doc == NULL || focusw != GTK_WIDGET(doc->editor->sci))
+	if (doc == NULL /*|| focusw != GTK_WIDGET(doc->editor->sci)*/)
 		return TRUE;
 
 	switch (key_id)

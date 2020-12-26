@@ -183,7 +183,7 @@ static void snippets_load(GKeyFile *sysconfig, GKeyFile *userconfig)
 
 static gboolean on_snippet_keybinding_activate(gchar *key)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	const gchar *s;
 
 	if (!doc || !gtk_widget_has_focus(GTK_WIDGET(doc->editor->sci)))
@@ -665,7 +665,7 @@ static gboolean reshow_calltip(gpointer data)
 	g_return_val_if_fail(calltip.sci != NULL, FALSE);
 
 	SSM(calltip.sci, SCI_CALLTIPCANCEL, 0, 0);
-	doc = document_get_current();
+	doc = document_get_current_active();
 
 	if (doc && doc->editor->sci == calltip.sci)
 	{
@@ -2519,9 +2519,13 @@ void editor_insert_text_block(GeanyEditor *editor, const gchar *text, gint inser
 
 	/* Set cursor to the requested index, or by default to after the snippet */
 	if (cursor_index >= 0)
+	{
 		sci_set_current_position(sci, insert_pos + cursor_index, FALSE);
+	}
 	else if (jump_locs == NULL)
+	{
 		sci_set_current_position(sci, insert_pos + buf->len, FALSE);
+	}
 
 	g_slist_free_full(jump_locs, g_free);
 	g_string_free(buf, TRUE);
@@ -3260,7 +3264,9 @@ void editor_do_comment_toggle(GeanyEditor *editor)
 			sci_set_selection_end(editor->sci, sel_end + b);
 		}
 		else
+		{
 			sci_set_current_position(editor->sci, sel_start + a, TRUE);
+		}
 	}
 	else
 	{
@@ -3406,7 +3412,7 @@ static gboolean brace_timeout_active = FALSE;
 
 static gboolean delay_match_brace(G_GNUC_UNUSED gpointer user_data)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	GeanyEditor *editor;
 	gint brace_pos = GPOINTER_TO_INT(user_data);
 	gint end_pos, cur_pos;
@@ -4038,7 +4044,9 @@ void editor_indentation_by_one_space(GeanyEditor *editor, gint pos, gboolean dec
 		sci_set_selection_end(editor->sci, sel_end + count);
 	}
 	else
+	{
 		sci_set_current_position(editor->sci, pos + count, FALSE);
+	}
 
 	sci_end_undo_action(editor->sci);
 }

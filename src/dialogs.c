@@ -667,7 +667,7 @@ static gboolean show_save_as_gtk(GeanyDocument *doc)
 GEANY_API_SYMBOL
 gboolean dialogs_show_save_as(void)
 {
-	GeanyDocument *doc = document_get_current();
+	GeanyDocument *doc = document_get_current_active();
 	gboolean result = FALSE;
 
 	g_return_val_if_fail(doc, FALSE);
